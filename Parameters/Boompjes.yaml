@@ -1,0 +1,48 @@
+#default parameters in the tool
+#cutting_height= elevation+1.0
+#s= 0.2
+#dbscan=2
+#k= 16
+#calcconvexhull = False
+
+f1: 
+  cutting_height: 1.0
+  k: 3
+  use_obb: True
+f2:
+  k: 60
+f3:
+  k: 32
+f4:
+  k: 64
+f5:
+  k: 32
+f6:
+  k: 50
+f7:
+  k: 18
+f13:
+  k: 50
+f14:
+  k: 64
+f23:
+  k: 64
+  s: 0.5
+  dbscan: 10
+f25:
+  k: 32
+f26:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f29:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f31:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f33:
+  calcconvexhull: True
+  use_obb: True
