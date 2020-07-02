@@ -68,6 +68,37 @@ The tool is able to export the polygon as a WKT polygon which can be loaded in Q
 
 ![WKT polygon in QGIS](./img/WKT.png)
 
+#How to use the tool
+
+Here is a [link](https://drive.google.com/drive/folders/15lssggZTPzWCzCmCMfeNaQi4qxUnoOy6) of a demo video.
+
+## open BIM
+
+In the File menu, click Open. This may take 5-10 mins depends on the complexity of the BIM.
+
+![open](./img/Open.png)
+
+## Set base floor number
+
+users can set the base floor number which is use in overhang and overlap process.
+![open](./img/Setbase.png)
+
+## Add georeference point
+If the BIM is not georeferenced, users can add georeference point to the BIM.
+![open](./img/Geo.png)
+
+## Be careful with overlap concave hull
+
+Due to the complex of the cutting result of the BIM, the concave hull of the slice can failed. User can try the "Single floor overlap" first before "All floor overlap".
+The default overlap parameters are set as:
+s = 0.2
+k = 16
+dbscan = 2
+![open](./img/Overlap_p.png)
+
+This will change the parameter of all floors. If you want to only change one floor parameters, you can use the .yaml file to change it.
+
+
 
 
 
