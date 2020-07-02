@@ -98,6 +98,8 @@ dbscan = 2
 
 This will change the parameter of all floors. If you want to only change one floor parameters, you can use the .yaml file to change it.
 
+For the BIM with normal rectangle floor shape, "All floor overlap bounding box" will be a better solution. It will not calculated the concave hull of each floor, instead the Oriented Bonding Boxes are used to get overlap.
+
 
 
 
