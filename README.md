@@ -68,7 +68,7 @@ The tool is able to export the polygon as a WKT polygon which can be loaded in Q
 
 ![WKT polygon in QGIS](./img/WKT.png)
 
-#How to use the tool
+# Video
 
 Here is a [link](https://drive.google.com/drive/folders/15lssggZTPzWCzCmCMfeNaQi4qxUnoOy6) of a demo video.
 
