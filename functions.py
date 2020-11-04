@@ -4,8 +4,13 @@ import math
 import ifcopenshell.geom
 from collections import defaultdict
 from collections import OrderedDict
-from OCC.Core.TopExp import TopExp_Explorer
 
+# --------- numpy ------------
+import numpy as np
+from numpy.linalg import norm
+
+# ---------- python-occ library ---------
+from OCC.Core.TopExp import TopExp_Explorer
 import OCC.Core.TopExp
 import OCC.Core.TopAbs
 import OCC.Core.TopoDS
@@ -18,7 +23,6 @@ from OCC.Core.BRepGProp import brepgprop_VolumeProperties ,brepgprop_SurfaceProp
 from OCC.Core.gp import (gp_Vec, gp_Pnt, gp_Trsf, gp_OX, gp_OY,gp_Pln,
                          gp_OZ, gp_XYZ, gp_Ax2, gp_Dir, gp_GTrsf, gp_Mat)
 from OCC.Core.BRepBndLib import brepbndlib_Add
-
 from OCC.Core.Bnd import Bnd_Box, Bnd_OBB
 from OCC.Extend.TopologyUtils import list_of_shapes_to_compound
 from OCC.Extend.ShapeFactory import get_oriented_boundingbox
@@ -34,35 +38,30 @@ from OCC.OCCUtils.Topology import *
 # import os
 # #HOST = os.environ['HOST']
 # #PW = os.environ['PW']
-#
+
 # ---------------CGAL alpha ----------------
 from CGAL.CGAL_Kernel import *
 from CGAL.CGAL_Alpha_shape_2 import Alpha_shape_2
 from CGAL.CGAL_Triangulation_2 import Delaunay_triangulation_2
-#
-#
+
 #----------Shapely --------------------
 from shapely.geometry import Polygon, Point
 from shapely import geometry,ops
-#
-#
-# ------------- matpolt -------------
+
+# ------------- matpolt ---------------
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 
-# -------------Scipy ----------------------
+# -------------Scipy ------------------
 from scipy.interpolate import interp1d
 from scipy.spatial import ConvexHull,convex_hull_plot_2d
 from scipy.spatial import distance
-# -------------kd-Tree-------------------------
-import numpy as np
-from numpy.linalg import norm
-
+# -------------kd-Tree-----------------
 from scipy.spatial import KDTree, Rectangle, distance_matrix, cKDTree
 from scipy.spatial.ckdtree import cKDTreeNode
 from scipy.spatial import minkowski_distance
 
-#-----------------sklearn-------------
+#-----------------sklearn--------------
 from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.datasets import make_blobs
@@ -70,55 +69,21 @@ from sklearn.preprocessing import StandardScaler
 
 from itertools import cycle
 
-# -------------------- overlap calculation ------------------------------
+# ------------ overlap calculation -----
 import time
 from concavehull3 import concaveHull, PlotHull,plotPoints,PlotHullAndPoints
 import os
-# --------------------- yml parameters ---------------------------------
+
+# ------------ yml parameters ----------
 import yaml
 from yaml import Loader, Dumper
 
 
-# def AddPoints2Database(lst_x, lst_y, table_name):
-#     """ Connect to the PostgreSQL database server """
-#     conn = None
-#     try:
-#         # read connection parameters
-#
-#         # connect to the PostgreSQL server
-#         print('Connecting to the PostgreSQL database...')
-#         conn = psycopg2.connect(host=HOST, database="GeoBIM", user="postgres", password=PW)
-#
-#         # create a cursor
-#         cur = conn.cursor()
-#
-#         # execute a statement
-#         # print('PostgreSQL database version:')
-#
-#         sql = "CREATE TABLE "+table_name+ " (id VARCHAR PRIMARY KEY, the_geom geometry(POINT, 0));"
-#         try:
-#             cur.execute(sql)
-#         except:
-#             print("CREATE TABLE FAILED")
-#         for i in range(len(lst_x)):
-#             sql = "INSERT INTO "+table_name+" VALUES('"+ str(i) +"\',"+ "ST_GeomFromText(\'POINT("+str(lst_x[i])+" "+str(lst_y[i])+")\',0));"
-#             #print(sql)
-#             cur.execute(sql)
-#
-#         conn.commit()
-#
-#         # display the PostgreSQL database server version
-#         # one = cur.fetchone()
-#         # print(one)
-#         # close the communication with the PostgreSQL
-#         cur.close()
-#     except (Exception, psycopg2.DatabaseError) as error:
-#         print(error)
-#     finally:
-#         if conn is not None:
-#             conn.close()
-#             print('Database connection closed.')
+
 def GetElementsByStorey(ifc_file):
+
+    ''' Get all the building storey elements from the input BIM , return list of storey elements, list of storey name'''
+
     # -----------------initialization --------------------------#
     building_elements_origin = ifc_file.by_type('IfcBuildingElement')
     building_elements = []
@@ -127,15 +92,11 @@ def GetElementsByStorey(ifc_file):
             print("Find that target")
         else:
             building_elements.append(e)
-
     storey_dict = {}
     building_storeys = ifc_file.by_type('IfcBuildingStorey')
     storey_id_lst = []
-
     for storey in building_storeys:
-        # print(storey.Name, str(storey.id()))
         storey_id_lst.append(storey.id())
-
     for element in building_elements:
         storey_dict[element.id()] = "null"
     for element in building_elements:
@@ -169,26 +130,24 @@ def GetElementsByStorey(ifc_file):
             dict_storeys[storey_dict[id]].append(element)
     storey_element_num = 0
     for each_floor in dict_storeys:
-        # print(type(each_floor),each_floor,len(dict_storeys[each_floor]),type(dict_storeys[each_floor][0]))
         storey_element_num += len(dict_storeys[each_floor])
-    # print("element_num:", element_num, "    storey_element_num:", storey_element_num)
+
     # ---------------trying sort dictionary ---------------#
     lst_storeys = list()
     dict_storeys_sorted = OrderedDict(sorted(dict_storeys.items()))
     lst_storey_name = list()
     for q in dict_storeys_sorted:
-        # print("buidling storey id:",q,"number of elements in the storey:",len(dict_storeys_sorted),type(dict_storeys_sorted[q][0]))
-        # print(ifc_file[q].Name)
         lst_storey_name.append(ifc_file[q].Name)
         lst_storeys.append(dict_storeys_sorted[q])
     print("All available storey from ", lst_storey_name[0], "to ", lst_storey_name[-1])
     print("Total number of storey:", len(lst_storey_name))
 
-    #print("Current Storey:", lst_storey_name[storey_number])
     return lst_storeys, lst_storey_name
 
 def GetStoreyElements(ifc_file,storey_number):
-#-----------------initialization --------------------------#
+
+    ''' Get all the building storey elements of the input floor, return list of storey elements, list of storey name'''
+
     building_elements_origin = ifc_file.by_type('IfcBuildingElement')
     print("len of building_elements_origin, ",len(building_elements_origin))
     building_elements = []
@@ -197,7 +156,6 @@ def GetStoreyElements(ifc_file,storey_number):
             print("Find that target")
         else:
             building_elements.append(e)
-
     storey_dict = {}
     building_storeys = ifc_file.by_type('IfcBuildingStorey')
     storey_id_lst = []
@@ -205,7 +163,6 @@ def GetStoreyElements(ifc_file,storey_number):
     for storey in building_storeys:
         #print(storey.Name, str(storey.id()))
         storey_id_lst.append(storey.id())
-
 
     for element in building_elements:
         storey_dict[element.id()] = "null"
@@ -225,10 +182,8 @@ def GetStoreyElements(ifc_file,storey_number):
                     if i == 0:
                         element_id = int(str(element_str[i])[1:])
                         storey_dict[element_id] = int(floor_num)
-
                     else:
                         storey_dict[int(element_str[i])] = int(floor_num)
-
      #--------------dictionary of list: storey number: [      ] --------------------#
     dict_storeys = defaultdict(list)
     element_num = 0
@@ -240,180 +195,47 @@ def GetStoreyElements(ifc_file,storey_number):
             dict_storeys[storey_dict[id]].append(element)
     storey_element_num = 0
     for each_floor in dict_storeys:
-        # print(type(each_floor),each_floor,len(dict_storeys[each_floor]),type(dict_storeys[each_floor][0]))
         storey_element_num += len(dict_storeys[each_floor])
-    #print("element_num:", element_num, "    storey_element_num:", storey_element_num)
     #---------------trying sort dictionary ---------------#
     lst_storeys =list()
     dict_storeys_sorted =  OrderedDict(sorted(dict_storeys.items()))
     lst_storey_name = list()
     for q in dict_storeys_sorted:
-        #print("buidling storey id:",q,"number of elements in the storey:",len(dict_storeys_sorted),type(dict_storeys_sorted[q][0]))
-        #print(ifc_file[q].Name)
         lst_storey_name.append(ifc_file[q].Name)
         lst_storeys.append(dict_storeys_sorted[q])
     print("All available storey from ", lst_storey_name[0], "to ",lst_storey_name[-1])
     print("Total number of storey:",len(lst_storey_name))
-
     print("Current Storey:", lst_storey_name[storey_number] )
+
     return lst_storeys[storey_number] ,lst_storey_name[storey_number]
 
 
 def CreateShape(ifc_elements):
-    '''return list of shape'''
+
+    '''create geometry shapes from the input ifc buidling storey elements, return list of shapes'''
+
     settings = ifcopenshell.geom.settings()
     settings.set(settings.USE_PYTHON_OPENCASCADE, True)
     shapes =[]
     if isinstance(ifc_elements, list):
-        #print("input is a list")
         for element in ifc_elements:
-
             if element.Representation:
-                # print(element.is_a())
-                # print(element.Name)
                 shape = ifcopenshell.geom.create_shape(settings, element).geometry
                 shapes.append(shape)
-            # else:
-            #     print("No Rrepresentation")
-            #else:
-                #print("input has no Representation")
-                #raise
     else:
         if ifc_elements.Representation:
             shape = ifcopenshell.geom.create_shape(settings, ifc_elements)
             shapes.append(shape)
-        # else:
-        #     print("No Rrepresentation")
     return shapes
-    # else:
-    #     print("input is not a list")
-    #     if ifc_elements.Representation:
-    #         shape = ifcopenshell.geom.create_shape(settings, ifc_elements)
-    #         return shape
-    #     else:
-    #         print("input has no Representation")
-
-
-
-
-def IfcVisualization(ifc_elements,pyocc_viewer):
-    settings = ifcopenshell.geom.settings()
-    settings.set(settings.USE_PYTHON_OPENCASCADE, True)
-    #pyocc_viewer = ifcopenshell.geom.utils.initialize_display()
-    if isinstance(ifc_elements,list):
-        for element in ifc_elements:
-            if element.Representation:
-                shape = ifcopenshell.geom.create_shape(settings, element)
-                display_shape = ifcopenshell.geom.utils.display_shape(shape)
-            else:
-                print(str(element.id()) + "No Rrepresentation")
-    else:
-        if ifc_elements.Representation:
-            shape = ifcopenshell.geom.create_shape(settings, ifc_elements)
-            display_shape = ifcopenshell.geom.utils.display_shape(shape)
-        else:
-            print(str(ifc_elements.id()) + "No Rrepresentation")
-
-    pyocc_viewer.FitAll()
-    #ifcopenshell.geom.utils.main_loop()
-
-def GetStoreySpace(ifc_file,storey_number):
-    building_storeys = ifc_file.by_type('IfcBuildingStorey')
-    storey_id_lst = []
-    for storey in building_storeys:
-        #print(storey.Name, str(storey.id()))
-        storey_id_lst.append(storey.id())
-
-    building_elements = ifc_file.by_type('ifcspace')
-
-    storey_dict = {}
-
-    for element in building_elements:
-        storey_dict[element.id()] = "null"
-
-    for element in building_elements:
-        if element.Decomposes:
-
-            content = element.Decomposes[0]
-            str_list = str(content).split(',')
-            # ---------floor number -------------#
-            floor_num = int(str_list[4][1:])
-            # ----------elements id ------------#
-            elements_split = re.split('[()]',str(content))
-            elements_id_str =  elements_split[2]
-            element_id_str_split = elements_id_str.split(',#')
-            # ------------update mapping dictionary ----------------
-            for i in range(len(element_id_str_split)):
-                if i ==0:
-                    element_id = int(element_id_str_split[i][1:])
-                    storey_dict[element_id] = floor_num
-                else:
-                    element_id = int(element_id_str_split[i])
-                    storey_dict[element_id] = floor_num
-            if floor_num not in storey_id_lst:
-                print(floor_num,"Not belong to BuildingStorey")
-    #--------------dictionary of list: storey number: [      ] --------------------#
-    dict_storeys = defaultdict(list)
-    element_num = 0
-    for element in building_elements:
-        element_num += 1
-        id = element.id()
-        if storey_dict[id] != "null":
-            # print("Storey number:",storey_dict[id])
-            dict_storeys[storey_dict[id]].append(element)
-    storey_element_num = 0
-    for each_floor in dict_storeys:
-        # print(type(each_floor),each_floor,len(dict_storeys[each_floor]),type(dict_storeys[each_floor][0]))
-        storey_element_num += len(dict_storeys[each_floor])
-    lst_storeys =list()
-    dict_storeys_sorted =  OrderedDict(sorted(dict_storeys.items()))
-    lst_storey_name = list()
-
-    for q in dict_storeys_sorted:
-        # print("buidling storey id:",q,"number of elements in the storey:",len(dict_storeys_sorted),type(dict_storeys_sorted[q][0]))
-        # print(ifc_file[q].Name)
-        lst_storey_name.append(ifc_file[q].Name)
-        lst_storeys.append(dict_storeys_sorted[q])
-
-    print("Storey:", lst_storey_name[10] )
-    return lst_storeys[storey_number]
-
-def calc_area(shape):
-    props = OCC.Core.GProp.GProp_GProps()
-    brepgprop_SurfaceProperties(shape.geometry, props)
-    return props.Mass()
-
-def GetEdgesOrientedBoundingBoxPoly(edges_compound,display):
-    #edges_compound =  list_of_shapes_to_compound(edges)
-    # bug happened here！！ need to fix
-    corners_bot,corners_top = get_oriented_boundingbox_coor(edges_compound, False)
-
-    # display.DisplayShape(corners_bot[0], update=True, color="green")
-    # display.DisplayShape(corners_bot[1], update=True, color="blue")  # left up
-    # display.DisplayShape(corners_bot[2], update=True, color="white")
-    # display.DisplayShape(corners_bot[3], update=True, color="red")  # red down
-    #
-    # display.DisplayShape(corners_top[0], update=True, color="yellow")
-    # display.DisplayShape(corners_top[1], update=True, color="yellow")  # left up
-    # display.DisplayShape(corners_top[2], update=True, color="yellow")
-    # display.DisplayShape(corners_top[3], update=True, color="yellow")  # yellow up
-
-    xy = [[corners_top[0].X(), corners_top[0].Y()], [corners_top[1].X(), corners_top[1].Y()],
-          [corners_top[2].X(), corners_top[2].Y()], [corners_top[3].X(), corners_top[3].Y()]]
-
-    print("bug checking,",xy)
-    print(corners_top[0].Z(),corners_top[1].Z(),corners_top[2].Z(),corners_top[3].Z())
-    poly = Polygon(xy)
-    return poly
-
-
 
 def GetShapesOBB(shapes):
+
+    ''' Get the oriented bounding box of the input shape'''
+
     shapes_compound, if_all_compound = list_of_shapes_to_compound(shapes)
     aBaryCenter, [aHalfX, aHalfY, aHalfZ], aBox = get_oriented_boundingbox(shapes_compound, 1)
     print("box center point, X Y Z size", aBaryCenter.X(), aBaryCenter.Y(), aBaryCenter.Z(), aHalfX, aHalfY, aHalfZ)
     corner_bot, corner_top = get_oriented_boundingbox_coor(shapes_compound, 1)
-
     center_pt = OCC.Core.gp.gp_Pnt(aBaryCenter)
     return aBox, center_pt, [aHalfX, aHalfY,aHalfZ], corner_bot, corner_top  # type(aBox)) #class 'OCC.Core.TopoDS.TopoDS_Solid', gp_Pnt, [float,float,float]
 
@@ -468,35 +290,6 @@ def ptsReorder(pt_lst):
     new_list = sorted(pt_lst , key=lambda k: [k[0], k[1]]) # order by x first min to max, when x = then y min to max
     return [new_list[0],new_list[1],new_list[3],new_list[2]]
 
-
-    #return [new_list[3],new_list[1],new_list[0],new_list[2]]
-
-
-    # x = []
-    # y = []
-    # pt_xmin = None
-    # pt_xmax = None
-    # pt_ymin = None
-    # pt_ymax = None
-    # for pt in pt_lst:
-    #     x.append(pt[0])
-    #     y.append(pt[1])
-    # for pt in pt_lst:
-    #     if pt[0] == min(x):
-    #         pt_xmin = pt
-    #         continue
-    #     if pt[1] == min(y):
-    #         pt_ymin = pt
-    #         continue
-    #     if pt[0] == max(x):
-    #         pt_xmax = pt
-    #         continue
-    #     if pt[1] == max(y):
-    #         pt_ymax = pt
-    # return  [pt_xmin,pt_ymin,pt_xmax,pt_ymax]
-
-
-
 def GetOrientedBoundingBoxShapeCompound(shapes_compound, optimal_OBB=False):
 
     obb = Bnd_OBB()
@@ -507,8 +300,6 @@ def GetOrientedBoundingBoxShapeCompound(shapes_compound, optimal_OBB=False):
         brepbndlib_AddOBB(shapes_compound, obb, is_triangulationUsed, is_optimal, is_shapeToleranceUsed)
     else:
         brepbndlib_AddOBB(shapes_compound, obb)
-    aBaryCenter = obb.Center()
-
     aBaryCenter = obb.Center()
     aXDir = obb.XDirection()
     aYDir = obb.YDirection()
@@ -554,22 +345,9 @@ def GetOrientedBoundingBox(ifc_elements):
     return aBox, center_pt, [aHalfX, aHalfY, aHalfZ], corner_bot, corner_top #type(aBox)) #class 'OCC.Core.TopoDS.TopoDS_Solid', gp_Pnt, [float,float,float]
 
 def get_oriented_boundingbox_coor(shape, optimal_OBB=False):
-    """ return the oriented bounding box of the TopoDS_Shape `shape`
 
-    Parameters
-    ----------
+    '''return the oriented bounding box of the TopoDS_Shape `shape`'''
 
-    shape : TopoDS_Shape or a subclass such as TopoDS_Face
-        the shape to compute the bounding box from
-    optimal_OBB : bool, True by default. If set to True, compute the
-        optimal (i.e. the smallest oriented bounding box). Optimal OBB is
-        a bit longer.
-    Returns
-    -------
-        a list with center, x, y and z sizes
-
-        a shape
-    """
     obb = Bnd_OBB()
     if optimal_OBB:
         is_triangulationUsed = True
@@ -578,7 +356,6 @@ def get_oriented_boundingbox_coor(shape, optimal_OBB=False):
         brepbndlib_AddOBB(shape, obb, is_triangulationUsed, is_optimal, is_shapeToleranceUsed)
     else:
         brepbndlib_AddOBB(shape, obb)
-
     # converts the bounding box to a shape
     aBaryCenter = obb.Center()
     aXDir = obb.XDirection()
@@ -608,22 +385,9 @@ def get_oriented_boundingbox_coor(shape, optimal_OBB=False):
     left_up_top= gp_Pnt(p.XYZ() - ax * aHalfX + ay * aHalfY + az * aHalfZ)
     corners_top = [new_origin_top,left_up_top,right_up_top,right_down_top]
 
-    # corners_bot,corners_top = AdjustfyCorners(corners_bot,corners_top)
-    # return corners_bot,corners_top
-
     if corners_top[0].Z()>=corners_bot[0].Z(): #always return bot , top
         return corners_bot,corners_top
-    # else:
-    #     return corners_bot,corners_top
-    # elif corners_top[0].Z() == corners_bot[0].Z():
-    #     print("22222222222222222222222222222222222222222")
-    #     lst1 = [left_up,new_origin,new_origin_top, left_up_top] #bot
-    #     #print("lst1:",lst1)
-    #     lst2 = [right_up,right_down,right_down_top,right_up_top] #top
-    #
-    #     return lst1,lst2
     else:
-        print("33333333333333333333333333333333333333333")
         return corners_top, corners_bot
 
 def GetCornerMaxMin(corners_bot,corners_top):
@@ -640,21 +404,7 @@ def GetCornerMaxMin(corners_bot,corners_top):
     z_max = max(lst_z)
     z_min = min(lst_z)
 
-    # bot_left_down =gp_Pnt(x_min,y_min,z_min)
-    # bot_left_up = gp_Pnt(x_min,y_max,z_min)
-    # bot_right_up = gp_Pnt(x_max,y_max,z_min)
-    # bot_right_down = gp_Pnt(x_max,y_min,z_min)
-    #
-    # top_left_down = gp_Pnt(x_min, y_min, z_max)
-    # top_left_up = gp_Pnt(x_min, y_max, z_max)
-    # top_right_up = gp_Pnt(x_max, y_max, z_max)
-    # top_right_down = gp_Pnt(x_max, y_min, z_max)
-    #
-    # return [bot_left_down,bot_left_up,bot_right_up,bot_right_down], [top_left_down,top_left_up,top_right_up,top_right_down]
     return x_max,x_min,y_max,y_min,z_max,z_min
-
-
-
 
 def GetAllCoordinates(ifc_elements):
     settings = ifcopenshell.geom.settings()
@@ -703,7 +453,6 @@ def WriteCorners2file(corners_bot_list,corners_top_list,filepath):
         file.write(str1)
     file.close()
 
-
 def GetSectionShape(z, shapes): # the mid z value of the storey, list of the storey shapes
     if isinstance(shapes, list):
         shapes_compound, if_all_compound = list_of_shapes_to_compound(shapes)
@@ -727,6 +476,7 @@ def GetSectionShape(z, shapes): # the mid z value of the storey, list of the sto
         if section.IsDone():
             print("Successfully get the section shape")
             return section.Shape()
+
 # --------------------CGAL ALPHA-----------------------
 def Point_2_str(self):
     return "Point_2"+str((self.x(), self.y()))
@@ -750,16 +500,11 @@ def test_Alpha_shapes_2(lst_x,lst_y,value, show_plot=False, if_kd_tree = True):
     edge_classify =set()
     for it in a.alpha_shape_edges():
         edge_classify.add(a.classify(it))
-        #if a.classify(it) == 2:
         alpha_shape_edges.append(a.segment(it))
-        # print(type(a.segment(it)),a.segment(it))  #segment_2
-        # print(type(a.segment(it).source()),a.segment(it).source())  #point_2
-        # print(type(a.segment(it).target()),a.segment(it).target())  #point_2
     print("Checking the edge classify type:")
     print(edge_classify)
     for it in a.alpha_shape_vertices():
         alpha_shape_vertices.append(it)
-        #print(type(it),it)
     if show_plot:
         showAlphaShape(points,alpha_shape_edges)
     poly1 = GetPolyfromAlpha(points,alpha_shape_edges,if_kd_tree)
@@ -770,7 +515,6 @@ def GetConnectedEdgeNew(lst_egdes):
     result = []
     base = lst_egdes[0]
     result.append(base)
-
     lst_egdes.remove(base)
     while len(lst_egdes)>0:
         for source_target in lst_egdes:
@@ -780,13 +524,11 @@ def GetConnectedEdgeNew(lst_egdes):
                 result.append(source_target)
                 lst_egdes.remove(source_target)
                 base = source_target
-                #print("end to begin")
                 break
             if base[1] == target_pt:#previous end to next end connection
                 result.append([target_pt,source_pt])
                 lst_egdes.remove(source_target)
                 base = [target_pt,source_pt]
-                #print("end to end")
                 break
 
     return result
@@ -836,50 +578,39 @@ def GetConnectedEdgeKD(lst_egdes):#input list of list [[source_pt,target_pt]] ou
         #print(base)
         #print("0 count,",list(dict.values()).count(0))
 
-    print("Edge reconnected!!!!!!!, Unconnected edge number,",list(dict.values()).count(0) )
+    print("Edge reconnected! Unconnected edge number,",list(dict.values()).count(0) )
     return result_edges_lst
-
 
 
 def GetPolyfromAlpha(points,alpha_shape_edges, if_kd_tree):
     lst_vertices = []
     lst_edges = []
-    #for i in range(int(len(alpha_shape_edges)*0.5)):
+
     for i in range(len(alpha_shape_edges)): # order of edges is not correct, discontinuous
         seg = alpha_shape_edges[i]
         source_pt = seg.source()
         target_pt = seg.target()
         lst_vertices.append((source_pt.x(),source_pt.y()))
         lst_edges.append([source_pt,target_pt])
-        #plt.plot([source_pt.x(), target_pt.x()], [source_pt.y(), target_pt.y()], color='r')
+
     if if_kd_tree:
         new_lst_edges = GetConnectedEdgeKD(lst_edges)
     else:
         new_lst_edges = GetConnectedEdgeNew(lst_edges)
     new_lst_vertices = []
     for source_target in new_lst_edges:
-    #for source_target in lst_edges:
+
         source_pt = source_target[0]
         target_pt = source_target[1]
         new_lst_vertices.append((source_pt.x(),source_pt.y()))
-        #plt.plot([source_pt.x(), target_pt.x()], [source_pt.y(), target_pt.y()], color='r')
 
-
-    #print(lst_vertices)
-    #poly= Polygon(lst_vertices)
     poly = Polygon(new_lst_vertices)
     print(new_lst_vertices)
     print("poly is valid,",poly.is_valid)
     return  poly
 
+
 def showAlphaShape(points, alpha_shape_edges):
-    # fig = plt.figure()
-    # axes = fig.add_axes([0.1, 0.1, 10, 10]) # left, bottom, width, height (range 0 to 1)
-    # axes.axis('equal')
-    # axes.set_xlabel(r'$x (m)$')
-    # axes.set_ylabel(r'$y (m)$')
-    # axes.set_title(r'$\alpha$-shape of clusters')
-    # draw cluster points
     x = [pt.x() for pt in points]
     y = [pt.y() for pt in points]
     plt.subplot(121)
@@ -895,19 +626,8 @@ def showAlphaShape(points, alpha_shape_edges):
         target_pt = seg.target()
 
         plt.plot([source_pt.x(),target_pt.x()],[source_pt.y(),target_pt.y()],color = 'r')
-
     plt.show()
 
-        # lst_x.append(x1)
-        # y1 = alpha_shape_edges[i].point().y()
-        # lst_y.append(y1)
-
-    # plt.plot(lst_x, lst_y, color='r')
-    # plt.show()
-    #     axes.plot([x1, x2], [y1, y2], color='b')
-    # fontP = FontProperties()
-    # fontP.set_size('7')
-    # axes.legend(loc=3, prop=fontP)
 def GetMAXDisPointlistPoly(lst_pt, polygon):
     maxdis =0.0
     for pt in lst_pt:
@@ -916,6 +636,7 @@ def GetMAXDisPointlistPoly(lst_pt, polygon):
             maxdix = dis
     print("maxdis",maxdis)
     return maxdis
+
 def EdgeSplitNew(edges_ver_x,edges_ver_y,edges_idx):
     a = np.array(edges_ver_x)
     b = np.array(edges_ver_y)
@@ -933,7 +654,6 @@ def EdgeSplitNew(edges_ver_x,edges_ver_y,edges_idx):
         tree = cKDTree(points)
         target.append([edges_ver_x[idx],edges_ver_y[idx]])
 
-
 def EdgeSplitShapely(lst_edges):
 
     lines = []
@@ -943,8 +663,6 @@ def EdgeSplitShapely(lst_edges):
         y_lst = []
         for vertex in t.vertices():
             pnt = BRep_Tool().Pnt(vertex)
-            # print('X', pnt.X(), 'Y', pnt.Y(), 'Z', pnt.Z())
-            # convert to int because the limitation of linemerge function
             x_lst.append(pnt.X())
             y_lst.append(pnt.Y())
 
@@ -953,8 +671,7 @@ def EdgeSplitShapely(lst_edges):
     multi_line = geometry.MultiLineString(lines)
     merge_line = ops.linemerge(multi_line)
     print(merge_line)
-    # for i in merge_line:
-    #     print(type(i), i)
+
 def GetShapeEdges(shape):
     #input opencad TopoDs_shape return lst of TopoDS_edges
     edges = []
@@ -973,10 +690,10 @@ def GetEdgeXY(edge):
         # print("vertices type",type(t.vertices()))  class 'list_iterator'
         pnt = BRep_Tool().Pnt(vertex)
         # print('X', pnt.X(), 'Y', pnt.Y(), 'Z', pnt.Z())
-
         x.append(pnt.X())
         y.append(pnt.Y())
     return x[0],y[0],x[1],y[1]
+
 def GetEdgeSamplePointsPerDistance(edges, distance):
     lst_xy = []
     print("edges size," ,len(edges))
@@ -1033,19 +750,6 @@ def SamplePoints(source, target, distance):
             x_new = np.append(x_new,x1)
     return x_new,y_new
 
-# def SamplePoints(source, target, distance):
-#     x1 = source.X()
-#     y1 = source.Y()
-#     x2 = target.X()
-#     y2 = target.Y()
-#     a = np.array([x1,x2])
-#     b = np.array([y1,y2])
-#     f = interp1d(a, b, kind='linear')
-#     x_new = np.arange(x1, x2, distance)
-#     x_new = np.append(x_new, x2)
-#     y_new = f(x_new)
-#     return x_new,y_new
-
 def GetEdges2DPT(edges):
     lst_xy = []
     for edge in edges:
@@ -1058,6 +762,7 @@ def GetEdges2DPT(edges):
                 lst_xy.append([pnt.X(),pnt.Y()])
 
     return lst_xy
+
 def ptdistance2D(pt1,pt2):
     x = pt1.X()-pt2.X()
     y = pt1.Y()-pt2.Y()
@@ -1066,122 +771,6 @@ def ptdistance2D(pt1,pt2):
 
 def distanceXY(x1,y1,x2,y2):
     return math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2))
-
-def EdgeSplit(lst_edges):
-    #input list of <class 'OCC.Core.TopoDS.TopoDS_Edge'>
-    print("Edge split starting")
-    dict ={}
-    for edge in lst_edges:
-        dict[edge] = int(0)
-    #initilize the first group for edge, insert the first edge
-    first_group = []
-    first_group.append(lst_edges[0])
-    dict[lst_edges[0]]= int(1)
-
-    #initlize the second group
-    second_group = []
-    second_group_ver =[]
-
-    #add the vertices of the first edge into the vertices list
-    first_group_ver = []
-
-    first_group_pt= []
-    second_group_pt = []
-
-    x0,y0,x1,y1 = GetEdgeXY(lst_edges[0])
-
-    first_group_pt.append([x0,y0,x1,y1])
-
-    t_1 = Topo(lst_edges[0])
-    for ver in t_1.vertices():
-        first_group_ver.append(ver)
-    lst_edges.remove(lst_edges[0])
-    #in the dict mark the first edge as checked
-    dict[lst_edges[0]] = int(1)
-
-    #final result list
-    lst_result = []
-    if_find_new_edge_connected = False
-
-    #while int(0) in dict.values():
-    #count=0
-    # first_group_len_before = 1
-    # first_group_len_after = 2
-
-    flag = int(0)
-
-    #while len(lst_edges)>2: # there is 2 edges strange, cannot be added into the groups
-        # need to find the nearest to the group, then do not need traverse all edge again
-        #if_find_new_edge_connected = False
-        #i = -1
-    while flag <2:
-        first_group_len_before = len(first_group)
-        for i in range(len(lst_edges)):
-        #while i < (len(lst_edges)-1):
-            #i+=1
-            #print("i",i, "len of lst_edges",len(lst_edges))
-            if i >= len(lst_edges):
-                #print("i",i, "len of lst_edges",len(lst_edges))
-                break
-            if i == (len(lst_edges) -1):
-                print("i vaule ---------------------:",i , "len of lst_edges", len(lst_edges))
-                #count+=1
-            # if the edge has been added into group
-            if dict[lst_edges[i]] == 0:
-                #print("checking a new edge")
-                if_find_new_edge_connected = False
-
-                s1,s2,q1,q2 = GetEdgeXY(lst_edges[i])
-
-                for pt in first_group_pt: #pt = [x1,y1,x2,y2]
-                    if distanceXY(s1,s2,pt[0],pt[1])<2 or distanceXY(s1,s2,pt[2],pt[3])<2 or distanceXY(q1,q2,pt[0],pt[1])<2 or distanceXY(q1,q2,pt[2],pt[3])<2 : # find a new edge
-
-                        first_group.append(lst_edges[i]) # add the new edge into first group
-                        #print("add one edge into the first group and i:", i, "  ", len(lst_edges))
-
-                        dict[lst_edges[i]] = int(1)   # mark in the dictionary
-                        if_find_new_edge_connected =True
-
-                        x0, y0, x1, y1 = GetEdgeXY(lst_edges[i])
-                        first_group_pt.append([x0, y0, x1, y1])
-
-                        lst_edges.remove(lst_edges[i])
-                        flag=0
-                        break
-                    else:
-                        continue
-        first_group_len_after = len(first_group)
-        if first_group_len_before == first_group_len_after:
-            flag+=1
-                # if second_group and if_find_new_edge_connected == False:  #second group is not empty
-                #     for pt in second_group_pt:  # pt = [x1,y1,x2,y2]
-                #         if distanceXY(s1, s2, pt[0], pt[1]) < 1 or distanceXY(s1, s2, pt[2], pt[3])<1 or distanceXY(q1,q2,pt[0],pt[1]) < 1 or distanceXY(q1, q2, pt[2], pt[3]) < 1:  # find a new edge
-                #
-                #             second_group.append(lst_edges[i])  # add the new edge into first group
-                #             print("add one edge into the second group and i:", i, "  ", len(lst_edges))
-                #
-                #             dict[lst_edges[i]] = int(2)  # mark in the dictionary
-                #             if_find_new_edge_connected = True
-                #
-                #             x0, y0, x1, y1 = GetEdgeXY(lst_edges[i])
-                #             second_group_pt.append([x0, y0, x1, y1])
-                #             lst_edges.remove(lst_edges[i])
-                #             #i= 0
-                #             break
-                #         else:
-                #             continue
-                #
-                # if not second_group and if_find_new_edge_connected == False and i == len(lst_edges)-1:
-                #     second_group.append(lst_edges[i])
-                #     print("create second group and i:", i, "  ", len(lst_edges))
-                #     dict[lst_edges[i]] = int(2)
-                #     x0, y0, x1, y1 = GetEdgeXY(lst_edges[i])
-                #     second_group_pt.append([x0, y0, x1, y1])
-                #     break
-
-    print("Edge separation done! ","number of edges first group len,",len(first_group), "second group,", len(second_group), "left group(which is used as second),", len(lst_edges))
-    #return list of list of edge  second is empty not implemented yet
-    return [first_group, second_group,lst_edges], dict
 
 def Edge2EdgeDistance(edge1,edge2):
 
@@ -1236,13 +825,11 @@ def EdgeErrorRemove(edges,distance):
     print("len of result edges,",len(edges),"len of outlier ed,",len(outlier_edges) )
     return edges, outlier_edges
 
-
 def GetStoreyOverlap(ground_poly, storey_poly_lst,floor_name_lst,filepath):
     f =open(filepath,"w+")
     ground_area = ground_poly.area
     str1 = "ground polygon/base polygon,"+str(ground_poly.is_valid)+",area:"+str(float("{:.2f}".format(ground_poly.area)))+" square meter"
     f.write(str1 + "\n")
-
     for i in range(0,len(storey_poly_lst)):
         per_floor_poly = storey_poly_lst[i]
         sum=0
@@ -1269,16 +856,12 @@ def GetConvexHullVertices(lst_x,lst_y, show_plt = True):
 
 def GetDBSCANClusteringlst(np_data, eps=0.3, min_samples=10,showplot =True,saveplot=False):
     result = []
-
     db = DBSCAN(eps, min_samples).fit(np_data)
-
     core_samples = db.core_sample_indices_
     labels = db.labels_
-
     # Number of clusters in labels, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
     print("Number of cluster,",n_clusters_)
-
     colors = cycle('bgrcmybgrcmybgrcmybgrcmy')
     for k, col in zip(set(labels), colors):
         if k == -1:
@@ -1306,14 +889,14 @@ def GetDBSCANClusteringlst(np_data, eps=0.3, min_samples=10,showplot =True,savep
         plt.savefig(saveplot)
         plt.close()
     return result
+
 def GetNumpyOBB(np_points,calcconvexhull=False, show_plot =True):
-    #Get oriented bounding box
-    # input np.array points (N,2), return corners np array [5,2] repeated first points
+    ''' Get oriented bounding box
+     input np.array points (N,2), return corners np array [5,2] repeated first points'''
 
     if calcconvexhull:
         _ch = ConvexHull(np_points)
         np_points = _ch.points[_ch.vertices]
-
 
     ca = np.cov(np_points, y=None, rowvar=0, bias=1)
     v, vect = np.linalg.eig(ca)
@@ -1329,7 +912,6 @@ def GetNumpyOBB(np_points,calcconvexhull=False, show_plot =True):
 
     # the center is just half way between the min and max xy
     center = mina + diff
-
     # get the 4 corners by subtracting and adding half the bounding boxes height and width to the center
     corners = np.array([center + [-diff[0], -diff[1]], center + [diff[0], -diff[1]], center + [diff[0], diff[1]],
                         center + [-diff[0], diff[1]], center + [-diff[0], -diff[1]]])
@@ -1370,7 +952,6 @@ def Plot2Polys(poly1,poly2):
 def Save2Polys(poly1,poly2,filepath="./result/overhang/2Polys.png"):
     x, y = poly1.exterior.xy
     plt.plot(x, y, color='r')
-
     x2, y2 = poly2.exterior.xy
     plt.plot(x2, y2, color='b')
     plt.axis('equal')
@@ -1378,10 +959,7 @@ def Save2Polys(poly1,poly2,filepath="./result/overhang/2Polys.png"):
     plt.savefig(filepath)
     plt.close()
 
-
-
 def PlotPolyAndPoints(poly,dataset,color="r"):
-
 
     plt.plot(dataset[:, 0], dataset[:, 1], 'o', markersize=1, markerfacecolor='0.75',
              markeredgewidth=1)
@@ -1394,6 +972,7 @@ def PlotPolyAndPoints(poly,dataset,color="r"):
 
     plt.suptitle("Polygon and points")
     plt.show()
+
 def SavePloyAndPoints(poly,dataset,color="r",filepath="./result/images/PolyandPoints.png"):
     plt.plot(dataset[:, 0], dataset[:, 1], 'o', markersize=1, markerfacecolor='0.75',
              markeredgewidth=1)
@@ -1405,34 +984,6 @@ def SavePloyAndPoints(poly,dataset,color="r",filepath="./result/images/PolyandPo
     plt.plot(x, y, color=color)
     plt.savefig(filepath)
     plt.close()
-
-
-
-def GetCoorAfterRotate(corners,target_corner):
-    # input base corner and target corner,return the new coord of target after applying the rotate rule of the base
-    # input np.array (5,2), output np.array[4,2], rotate clockwise until one axis parallel to y- axis
-    #return list of new coor [[x,y],[x,y],[x,y]]
-    pt = corners[3]
-    x = pt.item(0)
-    y = pt.item(1)
-
-    pt_2 = corners[0]
-    x2 = pt_2.item(0)
-    y2 = pt_2.item(1)
-
-    theta = np.arctan2((y2-y),(x2-x))
-    print("theta,",theta*180/math.pi,(y2-y),(x2-x))
-    x_lst = []
-    y_lst = []
-    for s in target_corner[:,0]:
-        if s not in x_lst:
-            x_lst.append(s)
-    for q in target_corner[:,1]:
-        if q not in y_lst:
-            y_lst.append(q)
-
-    new_xy_lst = GetNewCoordinates(-theta,x,y,x,y,x_lst,y_lst)
-    return new_xy_lst
 
 def PanPoint(corners,np_ab):
     # pan corner point, with -a -b distance to x, y axises：
@@ -1464,11 +1015,8 @@ def GetIfcSpaceLabel(ifcspace_element):
     # To support IFC2X3, we need to filter our results.
     if definition.is_a('IfcRelDefinesByProperties'):
         property_set = definition.RelatingPropertyDefinition
-
         for property in property_set.HasProperties:
             if property.is_a('IfcPropertySingleValue'):
-                #print(property.Name)
-                #print(property.NominalValue.wrappedValue)
                 return str(property.NominalValue.wrappedValue)
     else:
         raise Exception('An error occurred,IfcRelDefinesByProperties')
@@ -1476,18 +1024,13 @@ def GetIfcSpaceLabel(ifcspace_element):
 def Get_first_xy(floor_elements,s=0.2):
     shapes = CreateShape(floor_elements)
     print(type(shapes), type(shapes[0]))
-
     # get 3d oriented BBox of the shapes
     aBox, center_pt, [aHalfX, aHalfY, aHalfZ], corners_bot, corners_top = GetOrientedBoundingBox(floor_elements)
-
     pyocc_corners_list = []
     for pt in corners_top:
         pyocc_corners_list.append([pt.X(), pt.Y()])
         print([pt.X(), pt.Y()])
     poly_corners = Polygon(pyocc_corners_list)
-    # plot pythonocc obb
-    # PlotPolyAndPoints(poly_corners,np.array(pyocc_corners_list))
-
     x_max, x_min, y_max, y_min, z_max, z_min = GetCornerMaxMin(corners_bot, corners_top)
 
     if corners_bot[0].Z() == corners_top[0].Z():
@@ -1509,10 +1052,6 @@ def Get_first_xy(floor_elements,s=0.2):
     print("len of total section edges,", len(edges))
 
     # sample points of input edges:
-
-
-    #lst_edge_xy = GetEdges2DPT(edges)  # [[x1,y1],[x2,y2]]
-
     first_xy = GetEdgeSamplePointsPerDistance(edges, s)
     print("len of the points after sample,", len(first_xy))
     return first_xy
@@ -1547,7 +1086,6 @@ def GetIfcSpaceArea(ifcspace):
     #section_shape = GetSectionShape(z,shape)
     vol = calc_volume(shape)
     #print("volume,",vol)
-
     return vol/z
 
 def CheckIfcSpaceArea(ifcspace):
@@ -1587,7 +1125,6 @@ def GetMinParkingUnitNum(count_40,count_40_65, count_65_85, count_85_120, count_
 
 def GetIfcSpaceID(IfcSpace):
     definition = IfcSpace.IsDefinedBy[0] #ifcSpace.IsDefinedBy <class 'tuple'> 4 (#201119=IfcRelDefinesByProperties
-    #print(type(str(definition)),str(definition))
     str_split =str(definition).split('=')
     print("IfcSpace ID is: ",str_split[0])
     return str_split[0],int(str_split[0][1:])
