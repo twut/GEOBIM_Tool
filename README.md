@@ -70,7 +70,7 @@ The tool is able to export the polygon as a WKT polygon which can be loaded in Q
 
 # Video
 
-Here is a [link](https://drive.google.com/drive/folders/15lssggZTPzWCzCmCMfeNaQi4qxUnoOy6) of a demo video.
+Here is a [link](https://www.youtube.com/watch?v=UWAFZMfYQsM&feature=youtu.be) of a demo video.
 
 ## open BIM
 
